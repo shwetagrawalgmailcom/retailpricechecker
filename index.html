@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Price Checker</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0078d7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Price Checker">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Quagga library (optional - only needed for camera scanning on web server) -->
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js" async defer onerror="console.log('Quagga not loaded - camera scanning disabled')"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .box {
+            width: 100%;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 4rem;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 48px 36px;
+            margin-bottom: 40px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 40px;
+            min-height: 140px;
+        }
+
+        button {
+            width: 100%;
+            padding: 48px 36px;
+            background: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 40px;
+            font-weight: bold;
+            touch-action: manipulation;
+            min-height: 140px;
+        }
+
+            button:hover {
+                background: #005ea6;
+            }
+
+        .result {
+            margin-top: 50px;
+            padding: 40px;
+            border-radius: 8px;
+            display: none;
+            font-size: 36px;
+        }
+
+        .success {
+            background: #e7f6e7;
+            color: green;
+        }
+
+        .error {
+            background: #fdeaea;
+            color: red;
+        }
+
+        .price {
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+
+        .info {
+            font-size: 28px;
+            color: #666;
+            margin-top: 40px;
+        }
+
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #scanner-video {
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #0078d7;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            border: 3px solid #00ff00;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: #00ff00;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-secondary {
+            background: #6c757d !important;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268 !important;
+        }
+
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #0078d7;
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        
+        .install-prompt p {
+            margin: 0 0 20px 0;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .install-prompt button {
+            min-height: 80px;
+            font-size: 28px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 28px;
+            color: #666;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .box {
+                padding: 20px 15px;
+            }
+
+            h2 {
+                font-size: 3.5rem;
+            }
+
+            input {
+                font-size: 36px;
+                padding: 40px 32px;
+                min-height: 130px;
+            }
+
+            button {
+                font-size: 36px;
+                padding: 40px 32px;
+                min-height: 130px;
+            }
+
+            .price {
+                font-size: 44px;
+            }
+
+            .result {
+                font-size: 32px;
+                padding: 32px;
+            }
+
+            .install-prompt p {
+                font-size: 24px;
+            }
+
+            .install-prompt button {
+                font-size: 24px;
+                min-height: 70px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                padding: 30px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Install prompt -->
+    <div class="install-prompt" id="installPrompt">
+        <p>📱 Install Price Checker App?</p>
+        <div class="button-group">
+            <button id="installBtn">✅ Install App</button>
+            <button id="dismissBtn" class="btn-secondary">✕ Not Now</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <h2 id="storeHeading">Price Checker</h2>
+
+        <div class="scanner-container" id="scannerContainer">
+            <div id="scanner-video"></div>
+            <div class="scanner-overlay">
+                <div class="scanner-line"></div>
+            </div>
+        </div>
+
+        <div class="loading" id="loadingMsg">Loading price data...</div>
+
+        <input type="text" id="barcode" placeholder="Scan / Enter Barcode" />
+
+        <div class="button-group" id="buttonGroup">
+            <button type="button" id="btnScan" style="display:none;">📷 Scan Barcode</button>
+            <button type="button" id="btnCheck">Check Price</button>
+        </div>
+
+        <button type="button" id="btnClear" style="background:#6c757d; display:none; margin-top:10px;">🔄 Clear & Check Another</button>
+
+        <div id="resultBox" class="result"></div>
+
+        <div class="info" id="generationInfo"></div>
+    </div>
+
+</body>
+<script>
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(reg => {
+                console.log('Service Worker registered', reg);
+                
+                // Check for updates periodically
+                setInterval(() => {
+                    reg.update();
+                }, 60000); // Check every minute
+            })
+            .catch(err => console.log('Service Worker registration failed:', err));
+    });
+}
+
+// PWA Install prompt
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installPrompt').style.display = 'block';
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response: ${outcome}`);
+        deferredPrompt = null;
+        document.getElementById('installPrompt').style.display = 'none';
+    }
+});
+
+document.getElementById('dismissBtn').addEventListener('click', () => {
+    document.getElementById('installPrompt').style.display = 'none';
+});
+
+// Load price data from data.json
+let priceData = null;
+
+fetch('./data.json?t=' + new Date().getTime()) // Cache busting
+    .then(response => response.json())
+    .then(data => {
+        priceData = data;
+        document.getElementById('loadingMsg').style.display = 'none';
+
+        // Update store heading
+        if (priceData.store_name) {
+            document.getElementById('storeHeading').textContent = priceData.store_name;
+        }
+
+        // Update generation info
+        const genInfo = document.getElementById('generationInfo');
+        if (priceData.generated_on) {
+            genInfo.innerHTML = 'Generated: ' + priceData.generated_on + 
+                              '<br>Valid until: ' + priceData.expiry_time;
+        }
+
+        // Auto-focus on input
+        document.getElementById('barcode').focus();
+    })
+    .catch(err => {
+        console.error('Error loading data:', err);
+        document.getElementById('loadingMsg').textContent = 'Error loading price data. Please try refreshing.';
+        document.getElementById('loadingMsg').className = 'loading error';
+    });
+
+let scannerActive = false;
+
+// Check if camera scanning is available
+document.addEventListener('DOMContentLoaded', function() {
+    const btnScan = document.getElementById('btnScan');
+    const buttonGroup = document.getElementById('buttonGroup');
+    
+    // Show scan button only if:
+    // 1. Not on file:// protocol
+    // 2. Browser supports camera
+    // 3. On HTTPS or localhost
+    const isFileProtocol = window.location.protocol === 'file:';
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    const hasCamera = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+    
+    setTimeout(() => {
+        const hasQuagga = typeof Quagga !== 'undefined';
+        if (!isFileProtocol && isSecure && hasCamera && hasQuagga) {
+            btnScan.style.display = 'block';
+        } else {
+            btnScan.style.display = 'none';
+            document.getElementById('btnCheck').style.width = '100%';
+        }
+    }, 500); // Wait for Quagga to load
+});
+
+// Barcode Scanner Functions
+document.getElementById('btnScan').addEventListener('click', function() {
+    if (!scannerActive) {
+        startScanner();
+    } else {
+        stopScanner();
+    }
+});
+
+function startScanner() {
+    const scannerContainer = document.getElementById('scannerContainer');
+    const btnScan = document.getElementById('btnScan');
+    const resultBox = document.getElementById('resultBox');
+
+    // Check if Quagga library is loaded
+    if (typeof Quagga === 'undefined') {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.innerHTML = 'Scanner library not loaded.<br>This feature requires internet connection.';
+        return;
+    }
+
+    // Check if browser supports camera
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.innerHTML = 'Camera not supported on this browser.<br>Please use Chrome, Firefox, or Safari.';
+        return;
+    }
+
+    // Check if running on HTTPS or localhost
+    if (window.location.protocol === 'file:') {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.innerHTML = 'Camera blocked on file:// protocol.<br><br>Please access via web server.';
+        return;
+    }
+
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+
+    if (!isSecure) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.innerHTML = 'Camera requires HTTPS.<br>Please access this page via HTTPS.';
+        return;
+    }
+
+    // Show scanner and update button
+    scannerContainer.style.display = 'block';
+    btnScan.textContent = '❌ Stop Scanner';
+    btnScan.classList.add('btn-secondary');
+    scannerActive = true;
+    resultBox.style.display = 'none';
+
+    // Initialize Quagga
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#scanner-video'),
+            constraints: {
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 720, max: 1080 },
+                facingMode: "environment",
+                aspectRatio: { ideal: 16/9 }
+            }
+        },
+        decoder: {
+            readers: [
+                "ean_reader",
+                "ean_8_reader",
+                "code_128_reader",
+                "code_39_reader",
+                "upc_reader",
+                "upc_e_reader"
+            ],
+            multiple: false
+        },
+        locate: true,
+        locator: {
+            patchSize: "medium",
+            halfSample: true
+        },
+        numOfWorkers: 2,
+        frequency: 10
+    }, function(err) {
+        if (err) {
+            console.error('Quagga init error:', err);
+            resultBox.style.display = 'block';
+            resultBox.className = 'result error';
+            const errMsg = err.message || err.toString();
+            
+            if (errMsg.includes('Permission') || errMsg.includes('denied') || errMsg.includes('NotAllowed')) {
+                resultBox.innerHTML = '<b>Camera Permission Denied</b><br><br>' +
+                    '1. Tap the 🔒 icon in address bar<br>' +
+                    '2. Find Camera/Permissions<br>' +
+                    '3. Set to "Allow"<br>' +
+                    '4. Refresh the page';
+            } else {
+                resultBox.innerHTML = '<b>Camera Error</b><br><br>' + errMsg;
+            }
+            stopScanner();
+            return;
+        }
+        console.log('Quagga initialized successfully');
+        Quagga.start();
+    });
+
+    Quagga.onDetected(function(result) {
+        if (result && result.codeResult && result.codeResult.code) {
+            const barcode = result.codeResult.code;
+            console.log('Barcode detected:', barcode);
+            document.getElementById('barcode').value = barcode;
+            stopScanner();
+            setTimeout(function() {
+                document.getElementById('btnCheck').click();
+            }, 100);
+        }
+    });
+}
+
+function stopScanner() {
+    const scannerContainer = document.getElementById('scannerContainer');
+    const btnScan = document.getElementById('btnScan');
+
+    if (scannerActive) {
+        if (typeof Quagga !== 'undefined') {
+            Quagga.stop();
+        }
+        scannerContainer.style.display = 'none';
+        btnScan.textContent = '📷 Scan Barcode';
+        btnScan.classList.remove('btn-secondary');
+        scannerActive = false;
+    }
+}
+
+document.getElementById('btnCheck').addEventListener('click', function() {
+    const barcode = document.getElementById('barcode').value.trim();
+    const resultBox = document.getElementById('resultBox');
+    const btnClear = document.getElementById('btnClear');
+
+    if (!barcode) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.textContent = 'Please enter a barcode.';
+        btnClear.style.display = 'none';
+        return;
+    }
+
+    if (!priceData) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.textContent = 'Price data not loaded yet. Please wait...';
+        btnClear.style.display = 'none';
+        return;
+    }
+
+    const now = new Date();
+    const expiryTime = new Date(priceData.expiry_time);
+
+    if (now > expiryTime) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.textContent = 'Price data has expired. Please download fresh data from the main system.';
+        btnClear.style.display = 'none';
+        return;
+    }
+
+    if (!priceData.items || priceData.items.length === 0) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.textContent = 'No price data available. Please download data from the main system.';
+        btnClear.style.display = 'none';
+        return;
+    }
+
+    const item = priceData.items.find(i => i.barcode === barcode);
+    if (item) {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result success';
+        resultBox.innerHTML = `<div class="price">MRP: ₹${item.mrp.toFixed(2)}<br>Sale Rate: ₹${item.sale_rate.toFixed(2)}</div>`;
+        btnClear.style.display = 'block';
+    } else {
+        resultBox.style.display = 'block';
+        resultBox.className = 'result error';
+        resultBox.textContent = 'Barcode not found.';
+        btnClear.style.display = 'block';
+    }
+});
+
+document.getElementById('btnClear').addEventListener('click', function() {
+    document.getElementById('barcode').value = '';
+    document.getElementById('resultBox').style.display = 'none';
+    document.getElementById('btnClear').style.display = 'none';
+    document.getElementById('barcode').focus();
+});
+
+document.getElementById('barcode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('btnCheck').click();
+    }
+});
+
+// Auto-focus on barcode input when page loads
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        document.getElementById('barcode').focus();
+    }, 1000);
+});
+</script>
+</html>

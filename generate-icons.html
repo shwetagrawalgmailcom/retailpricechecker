@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Generate App Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            text-align: center;
+        }
+        .icon-preview {
+            margin: 20px;
+            display: inline-block;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #005ea6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generate Price Checker Icons</h1>
+    <p>Click the buttons below to download the required app icons:</p>
+    
+    <div class="icon-preview">
+        <h3>192x192 Icon</h3>
+        <canvas id="icon192" width="192" height="192"></canvas>
+        <br>
+        <button onclick="downloadIcon('icon192', 'icon-192.png')">Download 192x192</button>
+    </div>
+    
+    <div class="icon-preview">
+        <h3>512x512 Icon</h3>
+        <canvas id="icon512" width="512" height="512"></canvas>
+        <br>
+        <button onclick="downloadIcon('icon512', 'icon-512.png')">Download 512x512</button>
+    </div>
+
+    <script>
+        // Draw icon on 192x192 canvas
+        const canvas192 = document.getElementById('icon192');
+        const ctx192 = canvas192.getContext('2d');
+        drawIcon(ctx192, 192);
+
+        // Draw icon on 512x512 canvas
+        const canvas512 = document.getElementById('icon512');
+        const ctx512 = canvas512.getContext('2d');
+        drawIcon(ctx512, 512);
+
+        function drawIcon(ctx, size) {
+            // Background
+            ctx.fillStyle = '#0078d7';
+            ctx.fillRect(0, 0, size, size);
+
+            // Barcode stripes
+            ctx.fillStyle = 'white';
+            const stripeWidth = size / 15;
+            const startX = size * 0.2;
+            const startY = size * 0.3;
+            const barcodeHeight = size * 0.4;
+            
+            for (let i = 0; i < 8; i++) {
+                const x = startX + (i * stripeWidth * 1.5);
+                const width = (i % 2 === 0) ? stripeWidth * 0.5 : stripeWidth;
+                ctx.fillRect(x, startY, width, barcodeHeight);
+            }
+
+            // Price tag symbol
+            ctx.font = 'bold ' + (size * 0.15) + 'px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText('₹', size * 0.5, size * 0.85);
+        }
+
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            canvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Test Data Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: auto;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #005ea6;
+        }
+        .info {
+            background: #e7f6e7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Data Generator</h1>
+    <p>This tool helps you create sample price data for testing the PWA locally.</p>
+    
+    <div class="info">
+        <strong>How to use:</strong><br>
+        1. Click "Generate Sample Data" below<br>
+        2. Copy the generated JSON<br>
+        3. Replace the contents of <code>data.json</code> with it<br>
+        4. Open <code>index.html</code> to test
+    </div>
+
+    <button onclick="generateData()">Generate Sample Data</button>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    <button onclick="downloadJson()">Download as data.json</button>
+
+    <h3>Generated JSON:</h3>
+    <textarea id="jsonOutput" readonly></textarea>
+
+    <script>
+        function generateData() {
+            const items = [];
+            const barcodePatterns = [
+                '890123456', '891234567', '892345678', '893456789', '894567890',
+                '895678901', '896789012', '897890123', '898901234', '899012345'
+            ];
+
+            const productNames = [
+                'Rice 1kg', 'Wheat Flour 1kg', 'Sugar 1kg', 'Salt 500g', 'Tea 250g',
+                'Coffee 100g', 'Milk 1L', 'Oil 1L', 'Biscuit 200g', 'Chocolate 50g'
+            ];
+
+            for (let i = 0; i < 10; i++) {
+                items.push({
+                    barcode: barcodePatterns[i] + (i + 1),
+                    item_name: productNames[i],
+                    mrp: (Math.random() * 200 + 50).toFixed(2) * 1,
+                    sale_rate: (Math.random() * 150 + 40).toFixed(2) * 1
+                });
+            }
+
+            const now = new Date();
+            const expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+
+            const data = {
+                expiry_time: expiry.toISOString().replace('T', ' ').substring(0, 19),
+                store_id: 1,
+                store_name: "Price Checker - Test Store",
+                generated_on: now.toISOString().replace('T', ' ').substring(0, 19),
+                items: items
+            };
+
+            const json = JSON.stringify(data, null, 2);
+            document.getElementById('jsonOutput').value = json;
+        }
+
+        function copyToClipboard() {
+            const textarea = document.getElementById('jsonOutput');
+            if (textarea.value === '') {
+                alert('Please generate data first!');
+                return;
+            }
+            textarea.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+
+        function downloadJson() {
+            const textarea = document.getElementById('jsonOutput');
+            if (textarea.value === '') {
+                alert('Please generate data first!');
+                return;
+            }
+            
+            const blob = new Blob([textarea.value], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.download = 'data.json';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }
+
+        // Auto-generate on load
+        window.addEventListener('load', generateData);
+    </script>
+</body>
+</html>
