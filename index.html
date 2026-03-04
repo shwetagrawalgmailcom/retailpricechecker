@@ -433,37 +433,37 @@ function startScanner() {
     scannerActive = true;
     resultBox.style.display = 'none';
 
-    // Initialize Quagga
+    // Initialize Quagga with optimized settings for better barcode detection
     Quagga.init({
         inputStream: {
             name: "Live",
             type: "LiveStream",
             target: document.querySelector('#scanner-video'),
             constraints: {
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 },
+                width: { min: 800, ideal: 1280, max: 1920 },
+                height: { min: 600, ideal: 720, max: 1080 },
                 facingMode: "environment",
-                aspectRatio: { ideal: 16/9 }
+                aspectRatio: { ideal: 4/3 }  // Better for barcode capture
             }
         },
         decoder: {
             readers: [
-                "ean_reader",
+                "ean_reader",        // EAN-13 (your barcode format)
                 "ean_8_reader",
-                "code_128_reader",
-                "code_39_reader",
                 "upc_reader",
-                "upc_e_reader"
+                "upc_e_reader",
+                "code_128_reader",
+                "code_39_reader"
             ],
             multiple: false
         },
         locate: true,
         locator: {
-            patchSize: "medium",
-            halfSample: true
+            patchSize: "large",      // Changed from "medium" for better retail barcode detection
+            halfSample: false        // Changed from true for higher quality
         },
-        numOfWorkers: 2,
-        frequency: 10
+        numOfWorkers: 4,             // Increased from 2 for faster processing
+        frequency: 5                 // Changed from 10 for more scan attempts
     }, function(err) {
         if (err) {
             console.error('Quagga init error:', err);
@@ -487,15 +487,33 @@ function startScanner() {
         Quagga.start();
     });
 
+    // Improved detection with validation and confirmation
+    let detectionCount = {};
+
     Quagga.onDetected(function(result) {
         if (result && result.codeResult && result.codeResult.code) {
             const barcode = result.codeResult.code;
-            console.log('Barcode detected:', barcode);
-            document.getElementById('barcode').value = barcode;
-            stopScanner();
-            setTimeout(function() {
-                document.getElementById('btnCheck').click();
-            }, 100);
+
+            // Validate EAN-13/EAN-8/UPC format (8-13 digits only)
+            if (!/^\d{8,13}$/.test(barcode)) {
+                console.log('❌ Invalid barcode format (non-numeric or wrong length):', barcode);
+                return;
+            }
+
+            // Require 2 successful detections of the same barcode for accuracy
+            detectionCount[barcode] = (detectionCount[barcode] || 0) + 1;
+
+            if (detectionCount[barcode] >= 2) {
+                console.log('✅ Barcode confirmed:', barcode);
+                document.getElementById('barcode').value = barcode;
+                stopScanner();
+                detectionCount = {}; // Reset detection counter
+                setTimeout(function() {
+                    document.getElementById('btnCheck').click();
+                }, 100);
+            } else {
+                console.log('📷 Barcode detected once, confirming... (' + detectionCount[barcode] + '/2):', barcode);
+            }
         }
     });
 }
